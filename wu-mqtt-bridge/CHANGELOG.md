@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.1
+
+- Fix WU forwarding loop caused by aiohttp following redirects back through local DNS override
+- Filter out -9999 sentinel values (WU "sensor unavailable") instead of publishing them to HA
+- Throttle MQTT publishing with latest-value buffering — publishes the most recent reading when the throttle window expires, not the first one
+- Deduplicate identical data points (same station + dateutc) arriving via multiple DNS-redirected hostnames
+- Configurable publish interval (default 60s) to reduce update frequency
+- Use HTTP instead of HTTPS for WU forwarding to avoid TLS issues with IP-based connections
+
 ## 0.1.0
 
 - Initial release

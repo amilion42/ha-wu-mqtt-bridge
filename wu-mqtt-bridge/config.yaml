@@ -1,6 +1,6 @@
 name: "WU-MQTT Bridge"
 description: "Bridge Weather Underground weather stations to Home Assistant via MQTT"
-version: "0.1.0"
+version: "0.1.1"
 slug: wu-mqtt-bridge
 url: "https://github.com/xinuc/ha-wu-mqtt-bridge"
 arch:

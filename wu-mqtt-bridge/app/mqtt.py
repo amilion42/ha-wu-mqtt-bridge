@@ -12,8 +12,6 @@ from sensors import SensorDef, get_sensor_def, is_weather_param
 
 logger = logging.getLogger(__name__)
 
-VERSION = "0.1.0"
-
 # Reconnection backoff: 1s, 2s, 4s, 8s, 16s, 30s, 30s, ...
 MAX_RECONNECT_DELAY = 30
 
@@ -268,7 +266,6 @@ class MQTTPublisher:
                 "name": f"Weather Station ({station_id.upper()})",
                 "manufacturer": "WU-MQTT Bridge",
                 "model": "WU Protocol Bridge",
-                "sw_version": VERSION,
             },
             "availability_topic": f"wu_{station_id}/availability",
             "payload_available": "online",
