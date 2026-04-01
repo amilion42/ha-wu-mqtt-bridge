@@ -197,6 +197,9 @@ class MQTTPublisher:
                     continue
                 if not value:
                     continue
+                # WU uses -9999 as sentinel for "sensor unavailable"
+                if value == "-9999":
+                    continue
 
                 sensor_def = get_sensor_def(param)
                 entity_key = f"{sid}_{param}"
