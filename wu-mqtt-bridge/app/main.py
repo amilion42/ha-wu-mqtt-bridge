@@ -9,6 +9,7 @@ import logging
 import os
 import signal
 import sys
+import time
 
 from forwarder import WUForwarder
 from mqtt import MQTTPublisher
@@ -65,6 +66,7 @@ async def main() -> None:
     wu_forward = _get_env_bool("WU_FORWARD", True)
     log_level = _get_env("LOG_LEVEL", "info")
     stale_timeout = _get_env_int("STALE_TIMEOUT", 300)
+    publish_interval = _get_env_int("PUBLISH_INTERVAL", 60)
 
     _setup_logging(log_level)
 
@@ -75,6 +77,7 @@ async def main() -> None:
     logger.info("WU-MQTT Bridge starting...")
     logger.info("MQTT: %s:%d", mqtt_host, mqtt_port)
     logger.info("WU forwarding: %s", "enabled" if wu_forward else "disabled")
+    logger.info("Publish interval: %ds", publish_interval)
 
     # Initialize components
     mqtt = MQTTPublisher(
@@ -86,12 +89,75 @@ async def main() -> None:
     )
     forwarder = WUForwarder(enabled=wu_forward)
 
+    # Throttling state per station
+    last_dateutc: dict[str, str] = {}
+    last_publish_time: dict[str, float] = {}
+    pending_data: dict[str, tuple[str, dict[str, str]]] = {}
+    pending_timers: dict[str, asyncio.TimerHandle] = {}
+
+    def _publish_pending(sid: str) -> None:
+        """Fire-and-forget publish of pending data when throttle window expires."""
+        entry = pending_data.pop(sid, None)
+        pending_timers.pop(sid, None)
+        if entry is None:
+            return
+        station_id, params = entry
+        last_publish_time[sid] = time.monotonic()
+        last_dateutc[sid] = params.get("dateutc", "")
+        task = asyncio.create_task(mqtt.publish_weather_data(station_id, params))
+        task.add_done_callback(_log_task_exception)
+
     async def on_data_received(station_id: str, params: dict[str, str]) -> None:
-        """Called by the HTTP server when weather data arrives."""
-        await mqtt.publish_weather_data(station_id, params)
-        # Forward in background — don't await, don't block
+        """Called by the HTTP server when weather data arrives.
+
+        Deduplicates by dateutc (same data arriving multiple times).
+        Throttles MQTT publishing to at most once per publish_interval,
+        always keeping the latest data so the most recent reading is published.
+        WU forwarding always happens regardless of throttling.
+        """
+        sid = station_id.lower()
+        dateutc = params.get("dateutc", "")
+
+        # Always forward to WU (fire-and-forget) — even duplicates,
+        # since WU handles its own dedup and we want reliable forwarding
         task = asyncio.create_task(forwarder.forward(params))
         task.add_done_callback(_log_task_exception)
+
+        # Dedup: skip if we already processed this exact dateutc for this station
+        if dateutc and dateutc == last_dateutc.get(sid):
+            logger.debug("Skipping duplicate for %s (dateutc=%s)", station_id, dateutc)
+            return
+
+        # No throttling — publish immediately
+        if publish_interval <= 0:
+            last_dateutc[sid] = dateutc
+            last_publish_time[sid] = time.monotonic()
+            await mqtt.publish_weather_data(station_id, params)
+            return
+
+        # Throttle: if within the window, buffer the latest data
+        now = time.monotonic()
+        elapsed = now - last_publish_time.get(sid, 0)
+        if elapsed < publish_interval:
+            # Buffer this data — overwrites any previous pending data
+            # so we always publish the most recent reading
+            pending_data[sid] = (station_id, params)
+            # Schedule a timer to publish when the window expires (if not already scheduled)
+            if sid not in pending_timers:
+                delay = publish_interval - elapsed
+                loop = asyncio.get_running_loop()
+                pending_timers[sid] = loop.call_later(delay, _publish_pending, sid)
+                logger.debug(
+                    "Buffered %s (%.0fs until next publish)", station_id, delay,
+                )
+            else:
+                logger.debug("Updated buffered data for %s", station_id)
+            return
+
+        # Outside throttle window — publish immediately
+        last_dateutc[sid] = dateutc
+        last_publish_time[sid] = now
+        await mqtt.publish_weather_data(station_id, params)
 
     server = WUServer(on_data_received=on_data_received)
 

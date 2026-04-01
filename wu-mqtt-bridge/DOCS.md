@@ -52,6 +52,7 @@ MQTT is auto-discovered from the Mosquitto add-on. If you use a different MQTT b
 ### Options
 
 - **Forward to Weather Underground** (default: on): Keep sending data to WU so cloud features still work.
+- **Publish Interval** (default: 60 seconds): Minimum time between MQTT updates per station. Prevents flooding when stations send data very frequently. Set to 0 to publish every update.
 - **Log Level** (default: info): Set to `debug` to see all incoming weather data.
 - **Station Timeout** (default: 300 seconds): Time without data before a station is marked offline in HA.
 

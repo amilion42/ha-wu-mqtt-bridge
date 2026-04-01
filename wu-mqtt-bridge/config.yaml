@@ -25,6 +25,7 @@ options:
   mqtt_username: ""
   mqtt_password: ""
   wu_forward: true
+  publish_interval: 60
   log_level: "info"
   stale_timeout: 300
 schema:
@@ -33,6 +34,7 @@ schema:
   mqtt_username: "str?"
   mqtt_password: "password?"
   wu_forward: bool
+  publish_interval: "int(0,300)"
   log_level: "list(debug|info|warning|error)"
   stale_timeout: "int(60,3600)"
 stage: experimental

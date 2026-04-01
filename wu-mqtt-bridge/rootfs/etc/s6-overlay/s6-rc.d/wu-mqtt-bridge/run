@@ -41,6 +41,7 @@ fi
 
 export MQTT_HOST MQTT_PORT MQTT_USER MQTT_PASSWORD
 export WU_FORWARD="$(bashio::config 'wu_forward')"
+export PUBLISH_INTERVAL="$(bashio::config 'publish_interval')"
 export LOG_LEVEL="$(bashio::config 'log_level')"
 export STALE_TIMEOUT="$(bashio::config 'stale_timeout')"
 

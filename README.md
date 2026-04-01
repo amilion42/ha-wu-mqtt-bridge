@@ -83,6 +83,7 @@ Most users don't need to change anything. MQTT is auto-discovered from the Mosqu
 | MQTT Username | *(auto-discovered)* | Set only if using a non-Mosquitto MQTT broker |
 | MQTT Password | *(auto-discovered)* | Set only if using a non-Mosquitto MQTT broker |
 | Forward to WU | `true` | Keep sending data to Weather Underground |
+| Publish Interval | `60` | Minimum seconds between MQTT updates per station (0 = every update) |
 | Log Level | `info` | Set to `debug` to see all incoming data |
 | Station Timeout | `300` | Seconds without data before marking a station offline |
 

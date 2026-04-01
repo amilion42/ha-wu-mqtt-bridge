@@ -19,6 +19,12 @@ configuration:
     name: Forward to Weather Underground
     description: >-
       Keep sending data to WU so cloud features (history, apps) still work.
+  publish_interval:
+    name: Publish Interval (seconds)
+    description: >-
+      Minimum seconds between MQTT updates per station. Prevents flooding
+      from stations that send data very frequently. Set to 0 to publish
+      every update.
   log_level:
     name: Log Level
     description: >-
@@ -29,5 +35,5 @@ configuration:
       Seconds with no data before marking a station as offline.
 
 network:
-  443/tcp: HTTPS listener for weather station data (RapidFire)
-  80/tcp: HTTP listener for weather station data (standard)
+  443/tcp: HTTPS listener for weather station data
+  80/tcp: HTTP listener for weather station data
