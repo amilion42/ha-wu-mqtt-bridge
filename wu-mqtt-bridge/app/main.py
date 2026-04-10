@@ -124,9 +124,10 @@ async def main() -> None:
         task.add_done_callback(_log_task_exception)
 
         # Dedup: skip if we already processed this exact dateutc for this station
-        if dateutc and dateutc == last_dateutc.get(sid):
-            logger.debug("Skipping duplicate for %s (dateutc=%s)", station_id, dateutc)
-            return
+        # remove test
+        # if dateutc and dateutc == last_dateutc.get(sid):
+        #    logger.debug("Skipping duplicate for %s (dateutc=%s)", station_id, dateutc)
+        #    return
 
         # No throttling — publish immediately
         if publish_interval <= 0:
