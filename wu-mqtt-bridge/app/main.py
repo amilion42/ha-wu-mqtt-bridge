@@ -12,6 +12,7 @@ import sys
 import time
 
 from forwarder import WUForwarder
+from forwardpi2 import PI2Forwarder
 from mqtt import MQTTPublisher
 from server import WUServer
 
@@ -64,6 +65,7 @@ async def main() -> None:
     mqtt_user = _get_env("MQTT_USER")
     mqtt_password = _get_env("MQTT_PASSWORD")
     wu_forward = _get_env_bool("WU_FORWARD", True)
+    pi2_forward = _get_env_bool("PI2_FORWARD", True)
     log_level = _get_env("LOG_LEVEL", "info")
     stale_timeout = _get_env_int("STALE_TIMEOUT", 300)
     publish_interval = _get_env_int("PUBLISH_INTERVAL", 60)
@@ -77,6 +79,7 @@ async def main() -> None:
     logger.info("WU-MQTT Bridge starting...")
     logger.info("MQTT: %s:%d", mqtt_host, mqtt_port)
     logger.info("WU forwarding: %s", "enabled" if wu_forward else "disabled")
+    logger.info("PI2 forwarding: %s", "enabled" if pi2_forward else "disabled")
     logger.info("Publish interval: %ds", publish_interval)
 
     # Initialize components
@@ -88,6 +91,7 @@ async def main() -> None:
         stale_timeout=stale_timeout,
     )
     forwarder = WUForwarder(enabled=wu_forward)
+    forwarderpi2 = PI2Forwarder(enabled=pi2_forward)
 
     # Throttling state per station
     last_dateutc: dict[str, str] = {}
@@ -123,9 +127,12 @@ async def main() -> None:
         task = asyncio.create_task(forwarder.forward(params))
         task.add_done_callback(_log_task_exception)
 
+        task = asyncio.create_task(forwarderpi2.forward(params))
+        task.add_done_callback(_log_task_exception)
+
+
         # Dedup: skip if we already processed this exact dateutc for this station
-        # remove test
-        # if dateutc and dateutc == last_dateutc.get(sid):
+        #if dateutc and dateutc == last_dateutc.get(sid):
         #    logger.debug("Skipping duplicate for %s (dateutc=%s)", station_id, dateutc)
         #    return
 
@@ -177,6 +184,7 @@ async def main() -> None:
     try:
         await mqtt.connect()
         await forwarder.start()
+        await forwarderpi2.start()
         await server.start()
 
         logger.info("WU-MQTT Bridge is running")
@@ -192,6 +200,7 @@ async def main() -> None:
         logger.info("Shutting down...")
         await server.stop()
         await forwarder.stop()
+        await forwarderpi2.stop()
         await mqtt.disconnect()
         logger.info("WU-MQTT Bridge stopped")
 
