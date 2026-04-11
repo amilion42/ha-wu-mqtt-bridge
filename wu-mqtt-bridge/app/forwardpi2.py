@@ -54,6 +54,7 @@ class PI2Forwarder:
         url = f"http://{ip}{PI2_PATH}"
         query = urlencode(params)
         full_url = f"{url}?{query}"
+        logger.debug("Forwarded to PI2 (%s): ", full_url)
 
         try:
             async with self._session.get(
