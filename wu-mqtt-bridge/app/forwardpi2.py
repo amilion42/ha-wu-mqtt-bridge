@@ -51,7 +51,7 @@ class PI2Forwarder:
         if not ip:
             return
 
-        url = f"https://{ip}{PI2_PATH}"
+        url = f"http://{ip}{PI2_PATH}"
         query = urlencode(params)
         full_url = f"{url}?{query}"
 
